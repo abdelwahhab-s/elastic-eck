@@ -1,0 +1,29 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: fleet-ingress-websecure
+  namespace: elastic-prod
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - match: Host(`demo.fleet.34.29.147.36.nip.io`)
+    kind: Rule
+    middlewares:
+    - name: redirect-to-https
+      namespace: elastic-prod
+    services:
+    - name: fleet-server-prod-agent-http
+      port: 8220
+      scheme: https
+      namespace: elastic-prod
+      serversTransport: traefik-servers-transport
+
+  tls:
+    secretName: fleet-server-prod-agent-http-certs-internal
+    domains:
+    - sans:
+      - "demo.fleet.34.29.147.36.nip.io"

@@ -1,0 +1,15 @@
+- op: replace
+  path: /metadata/name
+  value: elasticsearch-dev
+
+- op: replace
+  path: /metadata/namespace
+  value: elastic-dev
+
+- op: replace
+  path: /spec/http/tls/selfSignedCertificate/subjectAltNames/0/dns
+  value: dev-es.alpha-corp.com
+
+- op: replace
+  path: /spec/nodeSets/0/volumeClaimTemplates/0/spec/storageClassName
+  value: standard-rwo

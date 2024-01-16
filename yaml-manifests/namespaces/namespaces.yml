@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: elastic-dev
+
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: elastic-staging
+
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: elastic-prod
+

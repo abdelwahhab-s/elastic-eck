@@ -1,0 +1,67 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: kibana-prod
+  namespace: elastic-prod
+spec:
+  version: 8.11.3
+  secureSettings:
+  - secretName: kibana-secret-settings
+  count: 1
+  http:
+    tls:
+      selfSignedCertificate:
+        subjectAltNames:
+        - dns: demo.kb.54.205.191.32.nip.io
+  elasticsearchRef:
+    name: elasticsearch-prod
+    namespace: elastic-prod
+  podTemplate:
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:8.11.3
+        env:
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 1
+          requests:
+            memory: 1Gi
+            cpu: 1
+  config:
+    xpack.fleet.agents.elasticsearch.hosts: ["https://elasticsearch-prod-es-http.default.svc:9200"]
+    xpack.fleet.agents.fleet_server.hosts: ["https://fleet-server-elastic-prod-agent-http.default.svc:8220", "https://demo.fleet.20.19.5.100.nip.io:443"]
+    xpack.fleet.packages:
+    - name: system
+      version: latest
+    - name: elastic_agent
+      version: latest
+    - name: fleet_server
+      version: latest
+    xpack.fleet.agentPolicies:
+    - name: Fleet Server on ECK policy
+      id: eck-fleet-server
+      namespace: default
+      is_default_fleet_server: true
+      monitoring_enabled:
+      - logs
+      - metrics
+      unenroll_timeout: 900
+      package_policies:
+      - name: fleet_server-1
+        id: fleet_server-1
+        package:
+          name: fleet_server
+    - name: Elastic Agent on ECK policy
+      id: eck-agent
+      namespace: default
+      monitoring_enabled:
+      - logs
+      - metrics
+      unenroll_timeout: 900
+      package_policies:
+      - name: system-1
+        id: system-1
+        package:
+          name: system

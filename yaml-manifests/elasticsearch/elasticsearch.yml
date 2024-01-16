@@ -1,0 +1,175 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch
+  namespace: elastic-prod
+  annotations:
+    eck.k8s.elastic.co/downward-node-labels: "topology.kubernetes.io/zone"
+spec:
+  version: 8.11.3
+
+  http:
+    tls:
+      selfSignedCertificate:
+        subjectAltNames:
+        - dns: demo.es.20.19.5.100.nip.io
+  nodeSets:
+  - name: master
+    count: 3
+    config:
+      node.roles: ["master"]
+      node.attr.zone: ${ZONE}
+      cluster.routing.allocation.awareness.attributes: k8s_node_name, zone
+    podTemplate:
+      spec:
+        initContainers:
+        - name: sysctl
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          command: ["sh", "-c", "sysctl -w vm.max_map_count=262144"]
+        containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+          env:
+          - name: ES_JAVA_OPTS
+            value: -Xms2g -Xmx2g
+          - name: ZONE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.annotations['topology.kubernetes.io/zone']
+
+          resources:
+            limits:
+              memory: 4Gi
+              cpu: 1
+            requests:
+              memory: 4Gi
+              cpu: 1
+
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+        storageClassName: gp2 # defautl_storageclass
+
+  - name: data-hot
+    count: 3
+    config:
+      node.roles: ["data_content", "data_hot", "ingest", "remote_cluster_client", "transform", "ml"]
+      node.attr.zone: ${ZONE}
+      cluster.routing.allocation.awareness.attributes: k8s_node_name,zone
+    podTemplate:
+      spec:
+        initContainers:
+        - name: sysctl
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+        containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+          env:
+          - name: ES_JAVA_OPTS
+            value: -Xms2g -Xmx2g
+          - name: ZONE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.annotations['topology.kubernetes.io/zone']
+          resources:
+            limits:
+              memory: 4Gi
+              cpu: 1
+            requests:
+              memory: 4Gi
+              cpu: 1
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-data-hot
+                topologyKey: topology.kubernetes.io/zone
+
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+        storageClassName: gp2
+
+  - name: ml
+    count: 0
+    config:
+      node.roles: ["ml", "remote_cluster_client"]
+      node.attr.zone: ${ZONE}
+      cluster.routing.allocation.awareness.attributes: k8s_node_name,zone
+    podTemplate:
+      spec:
+        initContainers:
+        - name: sysctl
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+        containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+          env:
+          - name: ES_JAVA_OPTS
+            value: -Xms2g -Xmx2g
+          - name: ZONE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.annotations['topology.kubernetes.io/zone']
+          resources:
+            limits:
+              memory: 4Gi
+              cpu: 1
+            requests:
+              memory: 4Gi
+              cpu: 1
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-ml
+                topologyKey: topology.kubernetes.io/zone
+
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+        storageClassName: gp2
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-prod-hot
+  namespace: elastic-prod
+spec:
+  ports:
+  - name: https
+    port: 9200
+    targetPort: 9200
+  selector:
+    elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-data-hot
+

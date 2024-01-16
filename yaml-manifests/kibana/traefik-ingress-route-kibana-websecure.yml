@@ -1,0 +1,29 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kibana-ingress-websecure
+  namespace: elastic-prod
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - match: Host(`demo.kb.20.19.5.100.nip.io`)
+    kind: Rule
+    middlewares:
+    - name: redirect-to-https
+      namespace: elastic-prod
+    services:
+    - name: kibana-prod-kb-http
+      port: 5601
+      scheme: https
+      namespace: elastic-prod
+      serversTransport: traefik-servers-transport
+
+  tls:
+    secretName: kibana-prod-kb-http-certs-internal
+    domains:
+    - sans:
+      - "demo.kb.20.19.5.100.nip.io"
