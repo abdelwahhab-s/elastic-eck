@@ -58,14 +58,14 @@ kubectl get secret elasticsearch-mon-es-elastic-user -n elastic-mon -o go-templa
 
 ## Deploy the production cluster
 
-9. Create the s3 secret
+1. Create the s3 secret
 ```bash
 kubectl create secret -n elastic-prod generic s3-secret-settings \
 --from-literal=s3.client.secondary.access_key=Xv/6tc15Hb+tV+7kCvKoTetFLFVxYcluZfwz9DyV7KT \
 --from-literal=s3.client.secondary.secret_key=Xv/6tc15Hb+tV+7kCvKoTetFLFVxYcluZfwz9DyV7KT
 ```
 
-1. Create the kibana saved objects encryption secret
+2. Create the kibana saved objects encryption secret
 ```bash
 kubectl create secret -n elastic-prod generic kibana-secret-settings \
    --from-literal=xpack.security.encryptionKey=Xv/6tc15Hb+tV+7kCvKoTetFLFVxYcluZfwz9DyV7KT \
@@ -73,7 +73,7 @@ kubectl create secret -n elastic-prod generic kibana-secret-settings \
    --from-literal=xpack.encryptedSavedObjects.encryptionKey=Xv/6tc15Hb+tV+7kCvKoTetFLFVxYcluZfwz9DyV7KT
 ```
 
-7. Deploy and expose the monitoring cluster via the ingress controller
+3. Deploy and expose the monitoring cluster via the ingress controller
 ```bash
 kubectl apply -f production-cluster/elasticsearch/elasticsearch.yml
 kubectl apply -f production-cluster/kibana/kibana.yml
@@ -86,13 +86,13 @@ kubectl apply -f production-cluster/traefik/traefik-ingress-route-kibana-websecu
 kubectl apply -f production-cluster/fleet/fleet-server.yml
 kubectl apply -f fleet/traefik-ingress-route-fleet-websecure.yml
 ```
-```
-8. Retrieve the `elastic` user password
+
+4. Retrieve the `elastic` user password
 ```bash
 kubectl get secret elasticsearch-mon-es-elastic-user -n elastic-mon -o go-template='{{.data.elastic | base64decode }}' 
 ```
 
-1. - - - Hint: watch namespace events and specific container logs - - - 
+5. - - - Hint: watch namespace events and specific container logs - - - 
 
 ```bash
 kubectl get events --sort-by='.metadata.creationTimestamp' -n elastic-prod -w
@@ -104,9 +104,7 @@ kubectl get secret elasticsearch-prod-es-data-es-config -n elastic-prod -o go-te
 kubectl get secret elasticsearch-prod-es-elastic-user -n elastic-prod -o go-template='{{.data.elastic | base64decode }}' 
 ```
 
-
-
-1.  Check this in the browser URL: 
+9.  Access Kibana using this browser URL: 
 ```
-demo.fleet.<ip>.nip.io
+demo.kb.<ip>.ip.es.io 
 ```
