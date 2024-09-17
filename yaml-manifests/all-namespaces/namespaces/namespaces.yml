@@ -16,3 +16,13 @@ items:
   metadata:
     name: elastic-prod
 
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: elastic-mon
+
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: traefik-v2
+

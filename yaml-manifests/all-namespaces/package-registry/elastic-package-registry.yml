@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: epr
-        image: docker.elastic.co/package-registry/distribution:8.11.4
+        image: docker.elastic.co/package-registry/distribution:8.15.1
         ports:
         - containerPort: 8080
         resources:

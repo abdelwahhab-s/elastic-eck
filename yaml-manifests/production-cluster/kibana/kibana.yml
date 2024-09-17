@@ -4,34 +4,39 @@ metadata:
   name: kibana-prod
   namespace: elastic-prod
 spec:
-  version: 8.11.3
+  version: 8.15.1
+  count: 2
+
   secureSettings:
   - secretName: kibana-secret-settings
-  count: 1
+
   http:
     tls:
       selfSignedCertificate:
         subjectAltNames:
-        - dns: demo.kb.54.205.191.32.nip.io
+        - dns: demo.kb.34.272.125.225.ip.es.io
+
   elasticsearchRef:
     name: elasticsearch-prod
     namespace: elastic-prod
+
   podTemplate:
     spec:
       containers:
       - name: kibana
-        image: docker.elastic.co/kibana/kibana:8.11.3
+        image: docker.elastic.co/kibana/kibana:8.15.1
         env:
         resources:
           limits:
             memory: 1Gi
-            cpu: 1
+            cpu: 100m
           requests:
             memory: 1Gi
-            cpu: 1
+            cpu: 100m
   config:
-    xpack.fleet.agents.elasticsearch.hosts: ["https://elasticsearch-prod-es-http.default.svc:9200"]
-    xpack.fleet.agents.fleet_server.hosts: ["https://fleet-server-elastic-prod-agent-http.default.svc:8220", "https://demo.fleet.20.19.5.100.nip.io:443"]
+    server.publicBaseUrl: "https://demo.kb.34.272.125.225.ip.es.io:443"
+    xpack.fleet.agents.elasticsearch.hosts: ["https://demo.esm.34.272.225.225.ip.es.io:443", "https://elasticsearch-prod-es-http.default.svc:9200"]
+    xpack.fleet.agents.fleet_server.hosts: ["https://fleet-server-prod-elastic-prod-agent-http.default.svc:8220"]
     xpack.fleet.packages:
     - name: system
       version: latest
@@ -49,8 +54,8 @@ spec:
       - metrics
       unenroll_timeout: 900
       package_policies:
-      - name: fleet_server-1
-        id: fleet_server-1
+      - name: fleet_server-2
+        id: fleet_server-2
         package:
           name: fleet_server
     - name: Elastic Agent on ECK policy
@@ -61,7 +66,7 @@ spec:
       - metrics
       unenroll_timeout: 900
       package_policies:
-      - name: system-1
-        id: system-1
+      - name: system-2
+        id: system-2
         package:
           name: system

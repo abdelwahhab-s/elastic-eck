@@ -1,0 +1,66 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch-mon
+  namespace: elastic-mon
+  annotations:
+    eck.k8s.elastic.co/downward-node-labels: "topology.kubernetes.io/zone"
+spec:
+  version: 8.15.1
+  secureSettings:
+  - secretName: s3-secret-settings
+
+  http:
+    tls:
+      selfSignedCertificate:
+        subjectAltNames:
+        - dns: demo.esm.35.224.71.88.ip.es.io
+
+  nodeSets:
+  - name: data-hot
+    count: 3
+    config:
+      node.roles: ["master", "data_content", "data_hot", "ingest", "remote_cluster_client", "transform", "ml"]
+      node.attr.zone: ${ZONE}
+      cluster.routing.allocation.awareness.attributes: k8s_node_name,zone
+    podTemplate:
+      spec:
+        initContainers:
+        - name: sysctl
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+        containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
+          env:
+          - name: ZONE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.annotations['topology.kubernetes.io/zone']
+          resources:
+            limits:
+              memory: 4Gi
+              cpu: 1
+            requests:
+              memory: 4Gi
+              cpu: 1
+
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-mon-es-master
+              topologyKey: topology.kubernetes.io/hostname
+
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+        storageClassName: standard-rwo

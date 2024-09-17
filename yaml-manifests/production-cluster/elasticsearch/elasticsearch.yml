@@ -1,21 +1,34 @@
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
-  name: elasticsearch
+  name: elasticsearch-prod
   namespace: elastic-prod
   annotations:
     eck.k8s.elastic.co/downward-node-labels: "topology.kubernetes.io/zone"
 spec:
-  version: 8.11.3
+  version: 8.15.1
+  secureSettings:
+  - secretName: s3-secret-settings
 
   http:
     tls:
       selfSignedCertificate:
         subjectAltNames:
-        - dns: demo.es.20.19.5.100.nip.io
+        - dns: demo.es.34.172.125.225.ip.es.io
+
+  monitoring:
+    metrics:
+      elasticsearchRefs:
+      - name: elasticsearch-mon
+        namespace: elastic-mon
+    logs:
+      elasticsearchRefs:
+      - name: elasticsearch-mon
+        namespace: elastic-mon
+
   nodeSets:
   - name: master
-    count: 3
+    count: 1
     config:
       node.roles: ["master"]
       node.attr.zone: ${ZONE}
@@ -30,10 +43,8 @@ spec:
           command: ["sh", "-c", "sysctl -w vm.max_map_count=262144"]
         containers:
         - name: elasticsearch
-          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
           env:
-          - name: ES_JAVA_OPTS
-            value: -Xms2g -Xmx2g
           - name: ZONE
             valueFrom:
               fieldRef:
@@ -41,11 +52,19 @@ spec:
 
           resources:
             limits:
-              memory: 4Gi
-              cpu: 1
+              memory: 2Gi
+              cpu: 100m
             requests:
-              memory: 4Gi
-              cpu: 1
+              memory: 2Gi
+              cpu: 100m
+
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-prod-es-master
+              topologyKey: topology.kubernetes.io/hostname
 
     volumeClaimTemplates:
     - metadata:
@@ -55,10 +74,10 @@ spec:
         resources:
           requests:
             storage: 5Gi
-        storageClassName: gp2 # defautl_storageclass
+        storageClassName: premium-rwo # or defautl_storageclass
 
   - name: data-hot
-    count: 3
+    count: 1
     config:
       node.roles: ["data_content", "data_hot", "ingest", "remote_cluster_client", "transform", "ml"]
       node.attr.zone: ${ZONE}
@@ -73,21 +92,19 @@ spec:
           command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
         containers:
         - name: elasticsearch
-          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
           env:
-          - name: ES_JAVA_OPTS
-            value: -Xms2g -Xmx2g
           - name: ZONE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.annotations['topology.kubernetes.io/zone']
           resources:
             limits:
-              memory: 4Gi
-              cpu: 1
+              memory: 2Gi
+              cpu: 100m
             requests:
-              memory: 4Gi
-              cpu: 1
+              memory: 2Gi
+              cpu: 100m
         affinity:
           podAntiAffinity:
             preferredDuringSchedulingIgnoredDuringExecution:
@@ -95,7 +112,7 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-data-hot
+                    elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-prod-es-data-hot
                 topologyKey: topology.kubernetes.io/zone
 
     volumeClaimTemplates:
@@ -106,7 +123,7 @@ spec:
         resources:
           requests:
             storage: 5Gi
-        storageClassName: gp2
+        storageClassName: premium-rwo
 
   - name: ml
     count: 0
@@ -124,21 +141,19 @@ spec:
           command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
         containers:
         - name: elasticsearch
-          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
           env:
-          - name: ES_JAVA_OPTS
-            value: -Xms2g -Xmx2g
           - name: ZONE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.annotations['topology.kubernetes.io/zone']
           resources:
             limits:
-              memory: 4Gi
-              cpu: 1
+              memory: 2Gi
+              cpu: 100m
             requests:
-              memory: 4Gi
-              cpu: 1
+              memory: 2Gi
+              cpu: 100m
         affinity:
           podAntiAffinity:
             preferredDuringSchedulingIgnoredDuringExecution:
@@ -146,7 +161,7 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-ml
+                    elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-prod-es-ml
                 topologyKey: topology.kubernetes.io/zone
 
     volumeClaimTemplates:
@@ -157,19 +172,4 @@ spec:
         resources:
           requests:
             storage: 5Gi
-        storageClassName: gp2
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: elasticsearch-prod-hot
-  namespace: elastic-prod
-spec:
-  ports:
-  - name: https
-    port: 9200
-    targetPort: 9200
-  selector:
-    elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-data-hot
-
+        storageClassName: premium-rwo

@@ -1,4 +1,4 @@
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: kibana-ingress-websecure
@@ -10,20 +10,20 @@ spec:
   entryPoints:
   - websecure
   routes:
-  - match: Host(`demo.kb.20.19.5.100.nip.io`)
+  - match: Host(`demo.kb.34.172.125.225.ip.es.io`)
     kind: Rule
     middlewares:
     - name: redirect-to-https
       namespace: elastic-prod
     services:
-    - name: kibana-prod-kb-http
+    - name: kibana-mon-kb-http
       port: 5601
       scheme: https
       namespace: elastic-prod
       serversTransport: traefik-servers-transport
 
   tls:
-    secretName: kibana-prod-kb-http-certs-internal
+    secretName: kibana-mon-kb-http-certs-internal
     domains:
     - sans:
-      - "demo.kb.20.19.5.100.nip.io"
+      - "demo.kb.34.172.125.225.ip.es.io"

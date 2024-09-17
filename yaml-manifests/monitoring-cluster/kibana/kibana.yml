@@ -1,0 +1,72 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: kibana-mon
+  namespace: elastic-mon
+spec:
+  version: 8.15.1
+  count: 2
+
+  secureSettings:
+  - secretName: kibana-secret-settings
+
+  http:
+    tls:
+      selfSignedCertificate:
+        subjectAltNames:
+        - dns: demo.kbm.35.224.71.88.ip.es.io
+
+  elasticsearchRef:
+    name: elasticsearch-mon
+    namespace: elastic-mon
+
+  podTemplate:
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:8.15.1
+        env:
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 500m
+          requests:
+            memory: 1Gi
+            cpu: 500m
+  config:
+    server.publicBaseUrl: "https://demo.kbm.34.272.125.225.ip.es.io:443"
+    xpack.fleet.agents.elasticsearch.hosts: ["https://demo.esm.34.272.225.225.ip.es.io:443", "https://elasticsearch-mon-es-http.default.svc:9200"]
+    xpack.fleet.agents.fleet_server.hosts: ["https://fleet-server-elastic-mon-agent-http.default.svc:8220"]
+    xpack.fleet.packages:
+    - name: system
+      version: latest
+    - name: elastic_agent
+      version: latest
+    - name: fleet_server
+      version: latest
+    xpack.fleet.agentPolicies:
+    - name: Fleet Server on ECK policy
+      id: eck-fleet-server
+      namespace: default
+      is_default_fleet_server: true
+      monitoring_enabled:
+      - logs
+      - metrics
+      unenroll_timeout: 900
+      package_policies:
+      - name: fleet_server-2
+        id: fleet_server-2
+        package:
+          name: fleet_server
+    - name: Elastic Agent on ECK policy
+      id: eck-agent
+      namespace: default
+      monitoring_enabled:
+      - logs
+      - metrics
+      unenroll_timeout: 900
+      package_policies:
+      - name: system-2
+        id: system-2
+        package:
+          name: system

@@ -4,7 +4,7 @@ metadata:
   name: maps-server-prod
   namespace: elastic-prod
 spec:
-  version: 8.11.2
+  version: 8.15.1
   count: 1
   elasticsearchRef:
     name: elasticsearch-prod

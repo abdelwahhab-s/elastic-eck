@@ -1,0 +1,29 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kibana-ingress-websecure
+  namespace: elastic-mon
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - match: Host(`demo.kbm.35.224.71.88.ip.es.io`)
+    kind: Rule
+    middlewares:
+    - name: redirect-to-https
+      namespace: elastic-mon
+    services:
+    - name: kibana-mon-kb-http
+      port: 5601
+      scheme: https
+      namespace: elastic-mon
+      serversTransport: traefik-servers-transport
+
+  tls:
+    secretName: kibana-mon-kb-http-certs-internal
+    domains:
+    - sans:
+      - "demo.kbm.35.224.71.88.ip.es.io"
