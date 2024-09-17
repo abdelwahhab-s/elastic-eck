@@ -10,7 +10,7 @@ spec:
   entryPoints:
   - websecure
   routes:
-  - match: Host(`demo.esm.34.172.125.225.ip.es.io`)
+  - match: Host(`demo.es.34.172.125.225.ip.es.io`)
     kind: Rule
     middlewares:
     - name: redirect-to-https
@@ -26,4 +26,4 @@ spec:
     secretName: elasticsearch-prod-es-http-certs-internal
     domains:
     - sans:
-      - "demo.esm.34.172.125.225.ip.es.io"
+      - "demo.es.34.172.125.225.ip.es.io"
