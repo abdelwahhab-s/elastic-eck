@@ -64,7 +64,7 @@ spec:
             - labelSelector:
                 matchLabels:
                   elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-prod-es-master
-              topologyKey: topology.kubernetes.io/hostname
+              topologyKey: topology.kubernetes.io/zone
 
     volumeClaimTemplates:
     - metadata:
@@ -77,7 +77,7 @@ spec:
         storageClassName: premium-rwo # or defautl_storageclass
 
   - name: data-hot
-    count: 1
+    count: 3
     config:
       node.roles: ["data_content", "data_hot", "ingest", "remote_cluster_client", "transform", "ml"]
       node.attr.zone: ${ZONE}

@@ -53,7 +53,7 @@ spec:
             - labelSelector:
                 matchLabels:
                   elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-mon-es-master
-              topologyKey: topology.kubernetes.io/hostname
+              topologyKey: topology.kubernetes.io/zone
 
     volumeClaimTemplates:
     - metadata:
